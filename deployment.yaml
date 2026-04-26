@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: singularity-development
+  labels:
+    app: goth
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: goth
+  template:
+    metadata:
+      labels:
+        app: goth
+    spec:
+      containers:
+      - name: singularity-overloaded
+        image: singularity:${VERSION}
+        
+        
+
+

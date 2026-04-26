@@ -1,0 +1,46 @@
+name: Singularity CI/CD Docker Container Test
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE: singularity
+  TEST_PORT: 3002
+  POD_PORT: 3000
+
+jobs:
+  container-test:
+    name: 🐳 Container Test
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: falseNegative
+        run: exit 1
+
+      - name: Docker Build (test tag)
+        run: docker build -t ${{ env.IMAGE }}:test $GITHUB_WORKSPACE
+      
+      - name: Run Container
+        run: |
+          docker run -d \
+            --name=${{ env.IMAGE }}-test \
+            -p ${{ env.TEST_PORT }}:${{ env.POD_PORT }} \
+            ${{ env.IMAGE }}:test
+      - name: Wait & Health Check
+        run: |
+          echo "Container ayağa kalkması bekleniyor (10s)..."
+          sleep 10
+          docker ps | grep ${{ env.IMAGE }}-test || (echo "Container çalışmıyor!" && exit 1)
+          curl --fail --retry 5 --retry-delay 2 http://localhost:${{ env.TEST_PORT }} \
+            && echo "Health check başarılı ✅" \
+            || echo "Health check endpoint bulunamadı, devam ediliyor..."
+      - name: Cleanup Test Container
+        if: always()
+        run: |
+          docker rm -f ${{ env.IMAGE }}-test || true
+          docker rmi ${{ env.IMAGE }}:test   || true
+
+          

@@ -1,0 +1,77 @@
+name: Singularity CI
+
+on:
+  workflow_dispatch:
+env:
+  VERSION: v1.0.0
+  IMAGE: singularity
+  CLUSTER: insturmentality
+  DEPLOYMENT: singularity-development
+  LOCAL_PORT: 3001
+  POD_PORT: 3000  
+
+jobs:
+    
+  build:
+    name: 🔨 Build Image
+    runs-on: self-hosted
+    
+    steps:
+     - name: Checkout
+       uses: actions/checkout@v4
+      
+     - name: Build Image
+       run: |
+          echo "--- [1/4] Docker imajı oluşturuluyor... ---"
+          docker build -t ${{ env.IMAGE }}:${{ env.VERSION }} $GITHUB_WORKSPACE
+    
+  load:
+    name: 🔃 Load Image
+    runs-on: self-hosted
+    needs:  build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load Image To The Cluster
+        run: |
+          echo "--- [2/4] Imaj cluster'a yükleniyor... ---"
+          kind load docker-image ${{ env.IMAGE }}:${{ env.VERSION }} --name ${{ env.CLUSTER }}
+          
+  apply:
+    name: ✅ Apply Image
+    runs-on: self-hosted
+    needs:  load
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply Kubernetes Objects
+        run: |
+          echo "--- [3/4] Kubernetes objeleri uygulanıyor... ---"
+          VERSION=${{ env.VERSION }} envsubst < deployment.yaml | kubectl apply -f -
+
+      - name: Restart Deployment
+        run: |
+          kubectl rollout restart deployment/${{ env.DEPLOYMENT }}
+
+      - name: Wait for Pods to Be Ready
+        run: |
+          sleep 5
+          echo "--- [Bekleniyor] Pod'ların hazır olması bekleniyor...---"
+          kubectl rollout status deployment/${{ env.DEPLOYMENT }}
+
+
+          
+      
+    
+
+        
+    
+
+    
+
+  
+
+    

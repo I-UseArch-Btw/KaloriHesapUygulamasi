@@ -1,0 +1,27 @@
+name: Singularity CI With Container Test
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Singularity CI/CD Docker Container Test
+    types: completed
+
+env:
+  VERSION: v1.0.0
+  IMAGE: singularity
+  CLUSTER: insturmentality
+  DEPLOYMENT: singularity-development
+  LOCAL_PORT: 3001
+  POD_PORT: 3000  
+
+jobs:
+  containerHealthTest:
+    name: 🐳 Container Test
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+  
